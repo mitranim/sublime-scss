@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>scope</key>
+  <string>
+    (
+      entity.name.tag.css             |
+      entity.name.class.css           |
+      entity.name.attribute-name.css  |
+      entity.name.custom-property.css |
+      entity.name.placeholder.scss    |
+      (entity.name.variable.scss - meta.block)
+    ) - meta.extend
+  </string>
+  <key>settings</key>
+  <dict>
+    <key>showInSymbolList</key>
+    <integer>1</integer>
+    <key>showInIndexedSymbolList</key>
+    <integer>1</integer>
+  </dict>
+</dict>
+</plist>

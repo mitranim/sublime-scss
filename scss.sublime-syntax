@@ -1,0 +1,215 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/syntax.html
+
+version: 2
+extends: Packages/sublime-scss/css.sublime-syntax
+file_extensions: [scss]
+scope: source.scss
+
+variables:
+  comment_line_start: '//'
+
+contexts:
+  top:
+    - meta_append: true
+    - include: variable-declaration
+
+  comment:
+    - meta_append: true
+    - include: comment-line
+
+  comment-line:
+    - match: '({{comment_line_start}}).*(\n|$)'
+      scope: comment.line.scss
+      captures:
+        1: punctuation.definition.comment.begin.scss
+
+  selector-declaration:
+    - meta_prepend: true
+    - include: placeholder-declaration
+    - include: selector-interpolation
+
+  selector-reference:
+    - meta_prepend: true
+    - include: placeholder-reference
+    - include: selector-interpolation
+
+  # Distinct from interpolation in property values.
+  selector-interpolation:
+    - match: (\#)({)
+      captures:
+        1: keyword.operator.scss
+        2: punctuation.section.braces.begin.scss
+      push: selector-interpolation-pop
+
+  selector-interpolation-pop:
+    - include: brace-end-pop
+    - include: selector-reference
+    - include: variable
+
+  property-value:
+    - meta_prepend: true
+    - include: property-value-interpolation
+
+  # Distinct from interpolation in selectors.
+  property-value-interpolation:
+    - match: (\#)({)
+      captures:
+        1: keyword.operator.scss
+        2: punctuation.section.braces.begin.scss
+      push: property-interpolation-pop
+
+  property-interpolation-pop:
+    # # Tentative.
+    # - clear_scopes: 1
+    - include: brace-end-pop
+    - include: variable
+    - include: property-value
+
+  placeholder-declaration:
+    - match: (%)({{ident}})
+      captures:
+        1: storage.modifier.scss
+        2: entity.name.placeholder.scss
+
+  placeholder-reference:
+    - match: (%)({{ident}})
+      captures:
+        1: storage.modifier.scss
+        2: variable.other.placeholder.scss
+
+  variable-declaration:
+    - match: (\$)({{ident}})\s*(:)
+      captures:
+        1: storage.modifier.scss
+        2: entity.name.variable.scss
+        3: punctuation.separator.scss
+      push: property-statement-pop
+
+  variable:
+    - match: (\$)({{ident}})
+      captures:
+        1: storage.modifier.scss
+        2: variable.other.scss
+
+  at:
+    - meta_prepend: true
+    - include: extend
+    - include: include
+    - include: mixin
+    - include: function
+    - include: if
+    - include: else
+
+  extend:
+    - match: (@)(extend){{ident_end}}
+      captures:
+        1: storage.modifier.css
+        2: keyword.extend.scss
+      push: extend-pop
+
+  extend-pop:
+    - meta_scope: meta.extend.scss
+    - include: pop-before-semi
+    - include: selector-reference
+
+  include:
+    - match: (@)(include){{ident_end}}
+      captures:
+        1: storage.modifier.scss
+        2: keyword.include.scss
+      push: include-pop
+
+  # TODO: function call -> parens -> with literals like in property value & set -> pop.
+  include-pop:
+    - match: '({{ident}})(\.)'
+      captures:
+        1: variable.other.scss
+        2: punctuation.accessor.scss
+    - match: '{{ident}}'
+      scope: variable.function.scss
+    - include: pop-before-brace
+    - include: property-statement-pop
+
+  mixin:
+    - match: (@)(mixin){{ident_end}}
+      captures:
+        1: storage.modifier.scss
+        2: keyword.mixin.scss
+      push: function-pop
+
+  function:
+    - match: (@)(function){{ident_end}}
+      captures:
+        1: storage.modifier.scss
+        2: keyword.function.scss
+      push: function-pop
+
+  function-pop:
+    - match: '{{ident}}'
+      scope: entity.name.function.scss
+      set: maybe-params-pop
+    - include: pop-before-nonblank
+
+  maybe-params-pop:
+    - match: \(
+      scope: punctuation.section.parens.begin.css
+      set: params-pop
+    - include: pop-before-nonblank
+
+  params-pop:
+    - include: paren-end-pop
+    - include: param
+    - include: comma
+
+  param:
+    - match: (\$)({{ident}})\s*(:)
+      captures:
+        1: storage.modifier.scss
+        2: variable.parameter.scss
+        3: punctuation.separator.scss
+      push:
+        param-value-pop
+    - match: (\$)({{ident}})
+      captures:
+        1: storage.modifier.scss
+        2: variable.parameter.scss
+
+  param-value-pop:
+    - include: pop-before-comma
+    - include: pop-before-paren
+    - include: literal
+    - include: string-unquoted
+
+  if:
+    - match: (@)(if){{ident_end}}
+      captures:
+        1: storage.modifier.css
+        2: keyword.scss
+      push: at-pop
+
+  else:
+    - match: (@)(else){{ident_end}}
+      captures:
+        1: storage.modifier.css
+        2: keyword.scss
+      push: else-pop
+
+  else-pop:
+    - match: '{{ident_begin}}if{{ident_end}}'
+      scope: keyword.scss
+      set: at-pop
+    - include: pop-before-nonblank
+
+  literal:
+    - meta_append: true
+    - include: variable
+
+  string-single-pop:
+    - meta_append: true
+    - include: property-value-interpolation
+
+  string-double-pop:
+    - meta_append: true
+    - include: property-value-interpolation

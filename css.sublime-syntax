@@ -1,0 +1,419 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/syntax.html
+
+# Reference: https://www.w3.org/TR/CSS2/syndata.html
+# Careful: real implementations don't match the spec.
+
+version: 2
+file_extensions: [css]
+scope: source.css
+
+variables:
+  comment_block_start:   '/\*'
+  comment_block_end:     '\*/'
+  ident:                 '{{ident_begin}}(?:-[[:alpha:]_-]{{ident_chars}}*|[[:alpha:]_]{{ident_chars}}*){{ident_end}}'
+  ident_custom_property: '{{ident_begin}}(?:--+{{ident_chars}}+){{ident_end}}'
+  ident_chars:           '[[:alnum:]_-]'
+  ident_begin:           '(?<!{{ident_chars}})'
+  ident_end:             '(?!{{ident_chars}})'
+  oper_chars:            '\~\!\^\&\*\<\>\?\/\|\=\+'
+  then_call:             (?=\s*\()
+  # Placeholder, there are other CSS escapes.
+  char_escape:           \\.
+
+contexts:
+  prototype: [{include: comment}]
+  main: [{include: top}]
+
+  top:
+    - include: at
+    - include: selector-declaration
+    - include: block
+    - include: semi
+
+  # Includes the top level because CSS nesting is coming up:
+  # https://drafts.csswg.org/css-nesting/
+  inside-block:
+    - include: property-statement
+    - include: top
+
+  comment: [{include: comment-block}]
+
+  comment-block:
+    - match: '{{comment_block_start}}'
+      scope: punctuation.definition.comment.begin.css
+      push: comment-block-pop
+
+  comment-block-pop:
+    - meta_scope: comment.block.css
+    - match: '{{comment_block_end}}'
+      scope: punctuation.definition.comment.end.css
+      pop: true
+    - include: comment-block
+
+  at:
+    - match: (@+)({{ident}})
+      captures:
+        1: storage.modifier.css
+        2: keyword.at.css
+      push: at-pop
+
+  at-pop:
+    - include: pop-before-semi
+    - include: pop-before-brace
+    - include: property-value
+
+  # Differences from `property-statement`:
+  #   * Value terminated by any of ";}".
+  #   * Special treatment of custom properties (ref: https://www.w3.org/TR/css-variables-1/)
+  property-statement:
+    - match: '(?:({{ident_custom_property}})|({{ident}}))\s*(:)'
+      captures:
+        1: entity.name.custom-property.css
+        2: storage.type.property-name.css
+        3: punctuation.separator.css
+      push: property-statement-pop
+
+  # Differences from `property-statement`:
+  #   * Value terminated by any of ",)".
+  #   * No special treatment of custom properties.
+  property-expression:
+    - match: '({{ident}})\s*(:)'
+      captures:
+        1: storage.type.property-name.css
+        2: punctuation.separator.css
+      push: property-expression-pop
+
+  property-statement-pop:
+    - meta_scope: meta.property.css
+    - include: pop-before-brace-end
+    - include: pop-before-semi
+    - include: property-value
+
+  property-expression-pop:
+    - meta_scope: meta.property.css
+    - include: pop-before-paren-end
+    - include: pop-before-comma
+    - include: property-value
+
+  property-value:
+    - include: literal
+    - include: bang
+    - include: operator
+    - include: property-value-call
+    - include: property-value-parens
+    - include: property-value-brackets
+    - include: property-value-braces
+    - include: punctuation
+    - include: string-unquoted
+
+  bang:
+    - match: '(!+)({{ident}})'
+      captures:
+        1: storage.modifier.css
+        2: keyword.other.css
+
+  property-value-call:
+    - include: call-var
+    - include: call
+
+  property-value-parens:
+    - match: \(
+      scope: punctuation.section.parens.begin.css
+      push: property-value-parens-pop
+    - include: paren-end-illegal
+
+  property-value-parens-pop:
+    - meta_scope: meta.function-call.selector.css
+    - include: paren-end-pop
+    - include: property-expression
+    - include: property-value
+
+  property-value-brackets:
+    - match: \[
+      scope: punctuation.section.brackets.begin.css
+      push: property-value-brackets-pop
+    - include: bracket-end-illegal
+
+  property-value-brackets-pop:
+    - meta_scope: meta.function-call.selector.css
+    - include: bracket-end-pop
+    - include: property-value
+
+  property-value-braces:
+    - match: \{
+      scope: punctuation.section.braces.begin.css
+      push: property-value-braces-pop
+    - include: brace-end-illegal
+
+  property-value-braces-pop:
+    - meta_scope: meta.function-call.selector.css
+    - include: brace-end-pop
+    - include: property-value
+
+  newline-illegal-pop:
+    - match: $\n?
+      scope: invalid.illegal.css
+      pop: true
+
+  operator:
+    - match: '[{{oper_chars}}]+'
+      scope: keyword.operator.css
+    - match: '{{ident_begin}}-{{ident_end}}'
+      scope: keyword.operator.css
+
+  punctuation:
+    - include: semi
+    - include: comma
+
+  semi:  [{match: '\;', scope: punctuation.terminator.css}]
+  comma: [{match: '\,', scope: punctuation.separator.css}]
+  colon: [{match: '\:', scope: punctuation.separator.css}]
+  dot:   [{match: '\.', scope: punctuation.separator.css}]
+
+  call-var:
+    - match: '{{ident_begin}}(var){{ident_end}}\s*(\()\s*({{ident}})\s*(\))'
+      scope: meta.function-call.css
+      captures:
+        1: variable.function.var.css
+        2: punctuation.section.parens.begin.css
+        3: variable.other.css
+        4: punctuation.section.parens.end.css
+
+  call:
+    - match: '({{ident}}){{then_call}}'
+      scope: variable.function.css
+
+  literal:
+    - include: number
+    - include: hex
+    - include: string
+
+  number:
+    - match: (-)?(?:\d+(\.)\d+|(\.)\d+|\d+)(%|[[:alpha:]]+)?
+      scope: constant.numeric.css
+      captures:
+        1: keyword.operator.arithmetic.css
+        2: punctuation.separator.decimal.css
+        3: punctuation.separator.decimal.css
+        4: keyword.css
+
+  hex:
+    - match: (\#+)[\h]+
+      scope: constant.numeric.color.hex.css
+      captures:
+        1: storage.modifier.css
+
+  string:
+    - include: string-single
+    - include: string-double
+
+  string-single:
+    - match: \'
+      scope: punctuation.definition.string.begin.css
+      push: string-single-pop
+
+  string-single-pop:
+    - meta_include_prototype: false
+    - meta_scope: string.quoted.single.css
+    - match: \'
+      scope: punctuation.definition.string.end.css
+      pop: true
+    - match: '{{char_escape}}'
+      scope: constant.character.escape.css
+    - include: newline-illegal-pop
+
+  string-double:
+    - match: \"
+      scope: punctuation.definition.string.begin.css
+      push: string-double-pop
+
+  string-double-pop:
+    - meta_include_prototype: false
+    - meta_scope: string.quoted.double.css
+    - match: \"
+      scope: punctuation.definition.string.end.css
+      pop: true
+    - match: '{{char_escape}}'
+      scope: constant.character.escape.css
+    - include: newline-illegal-pop
+
+  string-unquoted:
+    - match: \S
+      scope: string.unquoted.css
+
+  # https://www.w3.org/TR/selectors-4/
+  # https://www.w3.org/TR/CSS2/selector.html
+  #
+  # Must be kept in sync with `selector-reference`.
+  selector-declaration:
+    - include: class-declaration
+    - include: attr-declaration
+    - include: pseudo
+    - include: selector-declaration-parens
+    - include: type-declaration
+    - include: operator
+    - include: comma
+
+  # Must be kept in sync with `selector-declaration`.
+  selector-reference:
+    - include: class-reference
+    - include: attr-reference
+    - include: pseudo
+    - include: selector-reference-parens
+    - include: type-reference
+    - include: operator
+    - include: comma
+
+  class-declaration:
+    - match: (\.+)({{ident}})
+      captures:
+        1: storage.modifier.css
+        2: entity.name.class.css
+
+  class-reference:
+    - match: (\.+)({{ident}})
+      captures:
+        1: storage.modifier.css
+        2: variable.other.class.css
+
+  attr-declaration:
+    - match: \[
+      scope: punctuation.section.brackets.begin.css
+      push: attr-declaration-pop
+    - include: bracket-end-illegal
+
+  attr-reference:
+    - match: \[
+      scope: punctuation.section.brackets.begin.css
+      push: attr-reference-pop
+    - include: bracket-end-illegal
+
+  attr-declaration-pop:
+    - meta_scope: meta.attr.css
+    - match: '{{ident}}'
+      scope: entity.name.attribute-name.css
+      set: attr-operator-pop
+    - include: attr-unknown-pop
+
+  attr-reference-pop:
+    - meta_scope: meta.attr.css
+    - match: '{{ident}}'
+      scope: entity.name.attribute-name.css
+      set: attr-operator-pop
+    - include: attr-unknown-pop
+
+  attr-unknown-pop:
+    - include: bracket-end-pop
+    - include: top
+
+  attr-operator-pop:
+    - meta_scope: meta.attr.css
+    - include: bracket-end-pop
+    - match: '[{{oper_chars}}]+'
+      scope: keyword.css
+      set: attr-value-pop
+    - include: property-value
+
+  attr-value-pop:
+    - meta_scope: meta.attr.css
+    - include: bracket-end-pop
+    - include: property-value
+
+  pseudo:
+    - match: (:+)({{ident}}){{then_call}}
+      captures:
+        1: storage.modifier.css
+        2: keyword.other.pseudo.css variable.function.css
+    - match: (:+)({{ident}})
+      captures:
+        1: storage.modifier.css
+        2: keyword.other.pseudo.css
+
+  type-declaration:
+    - match: (?:(\*|{{ident}})(\|))?({{ident}})
+      captures:
+        1: variable.other.css
+        2: punctuation.accessor.css
+        3: entity.name.tag.css
+
+  type-reference:
+    - match: (?:(\*|{{ident}})(\|))?({{ident}})
+      captures:
+        1: variable.other.css
+        2: punctuation.accessor.css
+        3: variable.other.tag.css
+
+  selector-declaration-parens:
+    - match: \(
+      scope: punctuation.section.parens.begin.css
+      push: selector-declaration-parens-pop
+    - include: paren-end-illegal
+
+  selector-declaration-parens-pop:
+    - meta_scope: meta.function-call.selector.css
+    - include: paren-end-pop
+    - include: selector-declaration
+
+  selector-reference-parens:
+    - match: \(
+      scope: punctuation.section.parens.begin.css
+      push: selector-reference-parens-pop
+    - include: paren-end-illegal
+
+  selector-reference-parens-pop:
+    - meta_scope: meta.function-call.selector.css
+    - include: paren-end-pop
+    - include: selector-reference
+
+  block:
+    - match: \{
+      scope: punctuation.section.braces.begin.css
+      push: block-pop
+    - include: brace-end-illegal
+
+  block-pop:
+    - meta_scope: meta.block.css
+    - include: brace-end-pop
+    - include: inside-block
+
+  paren-end-pop:
+    - match: \)
+      scope: punctuation.section.parens.end.css
+      pop: true
+
+  bracket-end-pop:
+    - match: \]
+      scope: punctuation.section.brackets.end.css
+      pop: true
+
+  brace-end-pop:
+    - match: \}
+      scope: punctuation.section.braces.end.css
+      pop: true
+
+  paren-end-illegal:
+    - match: \)
+      scope: punctuation.section.parens.end.css invalid.illegal.css
+
+  bracket-end-illegal:
+    - match: \]
+      scope: punctuation.section.brackets.end.css invalid.illegal.css
+
+  brace-end-illegal:
+    - match: \}
+      scope: punctuation.section.braces.end.css invalid.illegal.css
+
+  pop-before-semi:          [{match: '(?=\;)', pop: true}]
+  pop-before-comma:         [{match: '(?=\,)', pop: true}]
+  pop-before-paren-begin:   [{match: '(?=\()', pop: true}]
+  pop-before-paren-end:     [{match: '(?=\))', pop: true}]
+  pop-before-bracket-begin: [{match: '(?=\[)', pop: true}]
+  pop-before-bracket-end:   [{match: '(?=\])', pop: true}]
+  pop-before-brace-begin:   [{match: '(?=\{)', pop: true}]
+  pop-before-brace-end:     [{match: '(?=\})', pop: true}]
+  pop-before-nonblank:      [{match: '(?=\S)', pop: true}]
+  pop-before-paren:         [{include: pop-before-paren-begin},   {include: pop-before-paren-end}]
+  pop-before-bracket:       [{include: pop-before-bracket-begin}, {include: pop-before-bracket-end}]
+  pop-before-brace:         [{include: pop-before-brace-begin},   {include: pop-before-brace-end}]
