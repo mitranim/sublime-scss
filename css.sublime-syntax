@@ -181,6 +181,7 @@ contexts:
         3: variable.other.css
         4: punctuation.section.parens.end.css
 
+  # TODO: support namespace prefix as `variable.namespace`.
   call:
     - match: '({{ident}}){{then_call}}'
       scope: variable.function.css
@@ -300,7 +301,7 @@ contexts:
   attr-reference-pop:
     - meta_scope: meta.attr.css
     - match: '{{ident}}'
-      scope: entity.name.attribute-name.css
+      scope: variable.other.attribute-name.css
       set: attr-operator-pop
     - include: attr-unknown-pop
 
@@ -334,14 +335,14 @@ contexts:
   type-declaration:
     - match: (?:(\*|{{ident}})(\|))?({{ident}})
       captures:
-        1: variable.other.css
+        1: variable.namespace.css
         2: punctuation.accessor.css
         3: entity.name.tag.css
 
   type-reference:
     - match: (?:(\*|{{ident}})(\|))?({{ident}})
       captures:
-        1: variable.other.css
+        1: variable.namespace.css
         2: punctuation.accessor.css
         3: variable.other.tag.css
 

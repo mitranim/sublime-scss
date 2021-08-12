@@ -121,11 +121,11 @@ contexts:
         2: keyword.include.scss
       push: include-pop
 
-  # TODO: function call -> parens -> with literals like in property value & set -> pop.
   include-pop:
+      # TODO this should be supported for regular function calls as well.
     - match: '({{ident}})(\.)'
       captures:
-        1: variable.other.scss
+        1: variable.namespace.scss
         2: punctuation.accessor.scss
     - match: '{{ident}}'
       scope: variable.function.scss
