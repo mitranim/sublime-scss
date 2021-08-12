@@ -50,7 +50,6 @@ contexts:
     - match: '{{comment_block_end}}'
       scope: punctuation.definition.comment.end.css
       pop: true
-    - include: comment-block
 
   at:
     - match: (@+)({{ident}})
