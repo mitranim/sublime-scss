@@ -35,6 +35,10 @@ contexts:
   # Includes the top level because CSS nesting is coming up:
   # https://drafts.csswg.org/css-nesting/
   inside-block:
+    # Known issue: tags followed by a pseudo class are erroneously scoped as
+    # properties, breaking large amounts of subsequent code. Reversing the
+    # order would break in a different way. Property vs. tag disambiguation
+    # needs to be smarter. 😞
     - include: property-statement
     - include: top
 

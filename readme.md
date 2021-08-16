@@ -51,6 +51,7 @@ To find the packages directory on your system, use Sublime Text menu → Prefere
 
 Not intentional, and may be addressed in the future.
 
+* Ambiguity: `tag:pseudo` (for arbitrary tag and pseudo) inside blocks is scoped as a property, breaking subsequent code.
 * Scopes are simplified and slightly unconventional. Color scheme support may be limited.
 * No hotkeys.
 * No indent rules.
