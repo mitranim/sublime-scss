@@ -25,24 +25,19 @@ variables:
 contexts:
   prototype: [{include: comment}]
   main: [{include: top}]
+  comment: [{include: comment-block}]
 
+  # Includes both selectors and properties because CSS nesting is coming up:
+  # https://drafts.csswg.org/css-nesting/
+  #
+  # Known false positive: scopes properties at the top level, which is not
+  # supported by current CSS engines. Fixing this would complicate our
+  # implementation.
   top:
     - include: at
-    - include: selector-declaration
     - include: block
     - include: semi
-
-  # Includes the top level because CSS nesting is coming up:
-  # https://drafts.csswg.org/css-nesting/
-  inside-block:
-    # Known issue: tags followed by a pseudo class are erroneously scoped as
-    # properties, breaking large amounts of subsequent code. Reversing the
-    # order would break in a different way. Property vs. tag disambiguation
-    # needs to be smarter. 😞
-    - include: property-statement
-    - include: top
-
-  comment: [{include: comment-block}]
+    - include: selector-or-property
 
   comment-block:
     - match: '{{comment_block_start}}'
@@ -55,6 +50,13 @@ contexts:
       scope: punctuation.definition.comment.end.css
       pop: true
 
+  selector-or-property:
+    - match: (?=\S)
+      branch_point: selector-or-property
+      branch:
+        - branch-selector-declaration
+        - branch-property-statement
+
   at:
     - match: (@+)({{ident}})
       captures:
@@ -66,6 +68,10 @@ contexts:
     - include: pop-before-semi
     - include: pop-before-brace
     - include: property-value
+
+  branch-property-statement:
+    - include: property-statement
+    - include: pop-before-nonblank
 
   # Differences from `property-statement`:
   #   * Value terminated by any of ";}".
@@ -247,6 +253,19 @@ contexts:
     - match: \S
       scope: string.unquoted.css
 
+  branch-selector-declaration:
+    - include: selector-declaration
+    - include: selector-commit
+    - include: selector-fail
+
+  selector-commit:
+    - match: (?=\{)
+      pop: true
+
+  selector-fail:
+    - match: (?=\S)
+      fail: selector-or-property
+
   # https://www.w3.org/TR/selectors-4/
   # https://www.w3.org/TR/CSS2/selector.html
   #
@@ -380,7 +399,7 @@ contexts:
   block-pop:
     - meta_scope: meta.block.css
     - include: brace-end-pop
-    - include: inside-block
+    - include: top
 
   paren-end-pop:
     - match: \)
