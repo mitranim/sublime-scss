@@ -38,6 +38,8 @@ contexts:
     - include: block
     - include: semi
     - include: selector-or-property
+    # Redundant with `selector-or-property`, TODO dedup.
+    - include: literal
 
   comment-block:
     - match: '{{comment_block_start}}'
@@ -52,12 +54,13 @@ contexts:
 
   selector-or-property:
     - match: (?=\S)
-      branch_point: selector-or-property
+      branch_point: branch-selector-or-property
       branch:
         - branch-selector-declaration
         - branch-property-statement
 
   at:
+    - include: keyframes
     - match: (@+)({{ident}})
       captures:
         1: storage.modifier.css
@@ -71,6 +74,8 @@ contexts:
 
   branch-property-statement:
     - include: property-statement
+    # Tentative, TODO dedup with `top`.
+    - include: literal
     - include: pop-before-nonblank
 
   # Differences from `property-statement`:
@@ -197,7 +202,7 @@ contexts:
 
   literal:
     - include: number
-    - include: hex
+    - include: color-hex
     - include: string
 
   number:
@@ -209,7 +214,7 @@ contexts:
         3: punctuation.separator.decimal.css
         4: keyword.css
 
-  hex:
+  color-hex:
     - match: (\#+)[\h]+
       scope: constant.numeric.color.hex.css
       captures:
@@ -264,7 +269,7 @@ contexts:
 
   selector-fail:
     - match: (?=\S)
-      fail: selector-or-property
+      fail: branch-selector-or-property
 
   # https://www.w3.org/TR/selectors-4/
   # https://www.w3.org/TR/CSS2/selector.html
@@ -273,6 +278,7 @@ contexts:
   selector-declaration:
     - include: class-declaration
     - include: attr-declaration
+    - include: id-declaration
     - include: pseudo
     - include: selector-declaration-parens
     - include: type-declaration
@@ -283,6 +289,7 @@ contexts:
   selector-reference:
     - include: class-reference
     - include: attr-reference
+    - include: id-reference
     - include: pseudo
     - include: selector-reference-parens
     - include: type-reference
@@ -344,6 +351,18 @@ contexts:
     - include: bracket-end-pop
     - include: property-value
 
+  id-declaration:
+    - match: (#)({{ident}})
+      captures:
+        1: storage.modifier.css
+        2: entity.name.id.css
+
+  id-reference:
+    - match: (#)({{ident}})
+      captures:
+        1: storage.modifier.css
+        2: variable.other.id.css
+
   pseudo:
     - match: (:+)({{ident}}){{then_call}}
       captures:
@@ -389,6 +408,19 @@ contexts:
     - meta_scope: meta.function-call.selector.css
     - include: paren-end-pop
     - include: selector-reference
+
+  keyframes:
+    - match: (@)(keyframes){{ident_end}}
+      captures:
+        1: storage.modifier.css
+        2: keyword.keyframes.scss
+      push: keyframes-maybe-name-pop
+
+  keyframes-maybe-name-pop:
+    - match: '{{ident}}'
+      scope: entity.name.function.keyframes.scss
+      pop: true
+    - include: pop-before-nonblank
 
   block:
     - match: \{

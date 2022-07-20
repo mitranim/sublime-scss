@@ -37,7 +37,7 @@ contexts:
 
   # Distinct from interpolation in property values.
   selector-interpolation:
-    - match: (\#)({)
+    - match: (#)({)
       captures:
         1: keyword.operator.scss
         2: punctuation.section.braces.begin.scss
@@ -54,7 +54,7 @@ contexts:
 
   # Distinct from interpolation in selectors.
   property-value-interpolation:
-    - match: (\#)({)
+    - match: (#)({)
       captures:
         1: keyword.operator.scss
         2: punctuation.section.braces.begin.scss
@@ -112,6 +112,7 @@ contexts:
   extend-pop:
     - meta_scope: meta.extend.scss
     - include: pop-before-semi
+    - include: pop-before-brace-end
     - include: selector-reference
 
   include:

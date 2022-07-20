@@ -56,6 +56,8 @@ Not intentional, and may be addressed in the future.
 * No indent rules.
 * No syntax tests.
 * In local index (^R or ⌘R), symbols are "bare": `class` not `.class`.
+* No proper `@keyframes` support.
+* No support for multiline string literals.
 
 ## License
 

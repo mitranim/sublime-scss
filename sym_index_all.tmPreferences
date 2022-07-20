@@ -6,6 +6,7 @@
     (
       entity.name.tag.css             |
       entity.name.class.css           |
+      entity.name.id.css           |
       entity.name.attribute-name.css  |
       entity.name.custom-property.css |
       entity.name.placeholder.scss    |
