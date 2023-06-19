@@ -101,6 +101,7 @@ contexts:
     - include: function
     - include: if
     - include: else
+    - include: use
 
   extend:
     - match: (@)(extend){{ident_end}}
@@ -187,20 +188,43 @@ contexts:
     - match: (@)(if){{ident_end}}
       captures:
         1: storage.modifier.css
-        2: keyword.scss
+        2: keyword.if.scss
       push: at-pop
 
   else:
     - match: (@)(else){{ident_end}}
       captures:
         1: storage.modifier.css
-        2: keyword.scss
+        2: keyword.else.scss
       push: else-pop
 
   else-pop:
     - match: '{{ident_begin}}if{{ident_end}}'
-      scope: keyword.scss
+      scope: keyword.if.scss
       set: at-pop
+    - include: pop-before-nonblank
+
+  # Examples:
+  #   @use 'some_path';
+  #   @use 'some_path' as some_ident;
+  use:
+    - match: (@)(use){{ident_end}}
+      captures:
+        1: storage.modifier.css
+        2: keyword.use.scss
+      push: [alias-pop, string-pop]
+
+  alias-pop:
+    - match: '{{ident_begin}}as{{ident_end}}'
+      scope: keyword.as.scss
+      set: alias-ident-pop
+    - include: pop-before-nonblank
+
+  alias-ident-pop:
+    - match: '{{ident}}'
+      # TODO better scope.
+      scope: entity.name.variable.scss
+      pop: 1
     - include: pop-before-nonblank
 
   literal:

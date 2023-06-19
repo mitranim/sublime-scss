@@ -20,7 +20,7 @@ variables:
   oper_chars:            '\~\!\^\&\*\<\>\?\/\|\=\+'
   then_call:             (?=\s*\()
   # Placeholder, there are other CSS escapes.
-  char_escape:           \\.
+  char_escape:           \\[.\n]
 
 contexts:
   prototype: [{include: comment}]
@@ -50,7 +50,7 @@ contexts:
     - meta_scope: comment.block.css
     - match: '{{comment_block_end}}'
       scope: punctuation.definition.comment.end.css
-      pop: true
+      pop: 1
 
   selector-or-property:
     - match: (?=\S)
@@ -166,11 +166,6 @@ contexts:
     - include: brace-end-pop
     - include: property-value
 
-  newline-illegal-pop:
-    - match: $\n?
-      scope: invalid.illegal.css
-      pop: true
-
   operator:
     - match: '[{{oper_chars}}]+'
       scope: keyword.operator.css
@@ -224,6 +219,10 @@ contexts:
     - include: string-single
     - include: string-double
 
+  string-pop:
+    - include: string
+    - include: pop-before-nonblank
+
   string-single:
     - match: \'
       scope: punctuation.definition.string.begin.css
@@ -234,10 +233,8 @@ contexts:
     - meta_scope: string.quoted.single.css
     - match: \'
       scope: punctuation.definition.string.end.css
-      pop: true
-    - match: '{{char_escape}}'
-      scope: constant.character.escape.css
-    - include: newline-illegal-pop
+      pop: 1
+    - include: string-inner
 
   string-double:
     - match: \"
@@ -249,10 +246,15 @@ contexts:
     - meta_scope: string.quoted.double.css
     - match: \"
       scope: punctuation.definition.string.end.css
-      pop: true
+      pop: 1
+    - include: string-inner
+
+  string-inner:
     - match: '{{char_escape}}'
       scope: constant.character.escape.css
-    - include: newline-illegal-pop
+    - match: (?<!\\)\n
+      scope: invalid.illegal.css
+      pop: 1
 
   string-unquoted:
     - match: \S
@@ -265,7 +267,7 @@ contexts:
 
   selector-commit:
     - match: (?=\{)
-      pop: true
+      pop: 1
 
   selector-fail:
     - match: (?=\S)
@@ -419,7 +421,7 @@ contexts:
   keyframes-maybe-name-pop:
     - match: '{{ident}}'
       scope: entity.name.function.keyframes.scss
-      pop: true
+      pop: 1
     - include: pop-before-nonblank
 
   block:
@@ -436,17 +438,17 @@ contexts:
   paren-end-pop:
     - match: \)
       scope: punctuation.section.parens.end.css
-      pop: true
+      pop: 1
 
   bracket-end-pop:
     - match: \]
       scope: punctuation.section.brackets.end.css
-      pop: true
+      pop: 1
 
   brace-end-pop:
     - match: \}
       scope: punctuation.section.braces.end.css
-      pop: true
+      pop: 1
 
   paren-end-illegal:
     - match: \)
@@ -460,15 +462,16 @@ contexts:
     - match: \}
       scope: punctuation.section.braces.end.css invalid.illegal.css
 
-  pop-before-semi:          [{match: '(?=\;)', pop: true}]
-  pop-before-comma:         [{match: '(?=\,)', pop: true}]
-  pop-before-paren-begin:   [{match: '(?=\()', pop: true}]
-  pop-before-paren-end:     [{match: '(?=\))', pop: true}]
-  pop-before-bracket-begin: [{match: '(?=\[)', pop: true}]
-  pop-before-bracket-end:   [{match: '(?=\])', pop: true}]
-  pop-before-brace-begin:   [{match: '(?=\{)', pop: true}]
-  pop-before-brace-end:     [{match: '(?=\})', pop: true}]
-  pop-before-nonblank:      [{match: '(?=\S)', pop: true}]
+  pop-before-semi:          [{match: '(?=\;)', pop: 1}]
+  pop-before-comma:         [{match: '(?=\,)', pop: 1}]
+  pop-before-paren-begin:   [{match: '(?=\()', pop: 1}]
+  pop-before-paren-end:     [{match: '(?=\))', pop: 1}]
+  pop-before-bracket-begin: [{match: '(?=\[)', pop: 1}]
+  pop-before-bracket-end:   [{match: '(?=\])', pop: 1}]
+  pop-before-brace-begin:   [{match: '(?=\{)', pop: 1}]
+  pop-before-brace-end:     [{match: '(?=\})', pop: 1}]
+  pop-before-nonblank:      [{match: '(?=\S)', pop: 1}]
   pop-before-paren:         [{include: pop-before-paren-begin},   {include: pop-before-paren-end}]
   pop-before-bracket:       [{include: pop-before-bracket-begin}, {include: pop-before-bracket-end}]
   pop-before-brace:         [{include: pop-before-brace-begin},   {include: pop-before-brace-end}]
+  pop:                      [{match: '', pop: 1}]
